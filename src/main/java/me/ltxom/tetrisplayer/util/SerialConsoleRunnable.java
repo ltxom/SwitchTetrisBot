@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class SerialConsoleRunnable implements Runnable {
 
 	private int threadSleepDuration = 5;
-	private String suffix = "$";
+	private String suffix = "*";
 	private Logger logger = LoggerFactory.getLogger(SerialConsoleRunnable.class);
 	private boolean isPaused = false;
 	private SerialMessageQueue serialMessageQueue;
@@ -30,7 +30,7 @@ public class SerialConsoleRunnable implements Runnable {
 							if(str!=null)
 								sb.append(str);
 							if (sb.toString().contains(suffix)) {
-								logger.info(sb.toString().trim().replace(suffix, ""));
+								logger.info(sb.toString().trim());
 								sb.setLength(0);
 							}
 						}
