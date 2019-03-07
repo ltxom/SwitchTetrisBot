@@ -6,22 +6,22 @@
 #define suffix "*"
 #define spliter ","
 #define lengthOfRxTxData 40
-#define keyPressDuration 10
+#define keyPressDuration 40
 #define transferTime 50
 class KeyCommand {
     public:
         KeyCommand(int commandNumber, String command) {
-            this - > _commandNumber = commandNumber;
-            this - > _command = command;
+            this -> _commandNumber = commandNumber;
+            this -> _command = command;
         }
     int getCommandNumber() {
-        return this - > _commandNumber;
+        return this -> _commandNumber;
     }
     String getCommand() {
-        return this - > _command;
+        return this -> _command;
     }
     String toString() {
-        return this - > _command + spliter + String(this - > _commandNumber);
+        return this -> _command + spliter + String(this -> _commandNumber);
     }
     private:
         int _commandNumber;
@@ -51,39 +51,41 @@ void loop() {
         if (str.indexOf(keyPrefix) >= 0 && str.indexOf(suffix) > 0) {
             KeyCommand * command = new KeyCommand(commandCounter++, str.substring(str.indexOf(keyPrefix) + 1, str.indexOf(suffix)));
             commandList.add(command);
+            Serial1.print(keyPrefix + command -> toString() + suffix);
         }
     }
 
+    // 暂时移除第二三次握手验证
     // 如果有未处理的指令
-    if (commandList.size() > 0) {
-        KeyCommand * nextCommand = commandList.get(0);
-        Serial.println(nextCommand - > toString());
-        Serial1.print(keyPrefix + nextCommand - > toString() + suffix);
-
-        // 等待输出
-        int commandLength = (nextCommand - > getCommand()).length();
-        delay(keyPressDuration * (commandLength) + transferTime);
-
-        // 如果有返回的状态
-        if (Serial1.available()) {
-            String str = Serial1.readString();
-            if (str.indexOf(keyPrefix) >= 0 && str.indexOf(suffix) > 0) {
-                str = str.substring(str.indexOf(keyPrefix) + 1, str.indexOf(suffix));
-                // 从队列中将该编号命令移除
-                int commandNumber = str.toInt();
-                for (int i = 0; i < commandList.size(); i++) {
-                    if (commandList.get(i) - > getCommandNumber() == commandNumber) {
-
-                        cPrintln("Command completed: " + commandList.get(i) - > toString());
-                        lcdPrint("Return: " + String(commandNumber));
-                        commandList.remove(i);
-                        break;
-                    }
-                }
-            }
-        }
-
-    }
+//    if (commandList.size() > 0) {
+//        KeyCommand * nextCommand = commandList.get(0);
+//        Serial.println(nextCommand -> toString());
+//        Serial1.print(keyPrefix + nextCommand -> toString() + suffix);
+//
+//        // 等待输出
+//        int commandLength = (nextCommand -> getCommand()).length();
+//        delay(keyPressDuration * (commandLength) + transferTime);
+//
+//        // 如果有返回的状态
+//        if (Serial1.available()) {
+//            String str = Serial1.readString();
+//            if (str.indexOf(keyPrefix) >= 0 && str.indexOf(suffix) > 0) {
+//                str = str.substring(str.indexOf(keyPrefix) + 1, str.indexOf(suffix));
+//                // 从队列中将该编号命令移除
+//                int commandNumber = str.toInt();
+//                for (int i = 0; i < commandList.size(); i++) {
+//                    if (commandList.get(i) -> getCommandNumber() == commandNumber) {
+//
+//                        cPrintln("Command completed: " + commandList.get(i) -> toString());
+//                        lcdPrint("Return: " + String(commandNumber));
+//                        commandList.remove(i);
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//
+//    }
 
 }
 
