@@ -133,12 +133,15 @@ public class TetrisBoardService {
 
     public static void main(String[] args) {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        File file = new File("out/img/1551761006389.png");
-        try {
-            BufferedImage bi = ImageIO.read(file);
-            analyzeBoardByImage(bi);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        File file = new File("out/img/");
+        for (File f : file.listFiles())
+            try {
+                BufferedImage bi = ImageIO.read(f);
+                System.out.println(f.getName());
+                analyzeBoardByImage(bi);
+                System.out.println();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
 }
