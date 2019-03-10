@@ -7,4 +7,5 @@
 *.iml
 *.ipr
 
-*.png
+img/*.png
+out/*.png
