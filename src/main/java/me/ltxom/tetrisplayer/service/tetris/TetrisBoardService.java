@@ -11,454 +11,486 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
 public class TetrisBoardService {
-    @Autowired
-    private ScreenStreamService screenStreamService;
-    private static final double startX = 299.0;
-    private static final double startY = 399.0;
-    private static final int brightDx = (int) (startX - 295.0);
-    private static final int brightDy = (int) (startY - 394.0);
+	private static final double startX = 299.0;
+	private static final double startY = 399.0;
+	private static final int brightDx = (int) (startX - 295.0);
+	private static final int brightDy = (int) (startY - 394.0);
+	private static final double blockLength = 19.333;
+	private static final int nextBlockIX = 498;
+	private static final int nextBlockIY = 53;
+	private static final int nextBlockTX = 498;
+	private static final int nextBlockTY = 63;
+	private static final int nextBlockOX = 509;
+	private static final int nextBlockOY = 52;
+	private static final int nextBlockJX = 519;
+	private static final int nextBlockJY = 64;
+	private static final int nextBlockSX = 509;
+	private static final int nextBlockSY = 63;
+	private static final int nextBlockZX = 509;
+	private static final int nextBlockZY = 63;
+	private static final int nextBlockLX = 498;
+	private static final int nextBlockLY = 63;
+	private static final int nextFollowingBlockStartX = 507;
+	private static final int nextFollowingBlockStartY = 89;
+	private static final int nextBlockLength = 11;
+	private static final int nextFollowingBlockLength = 9;
+	private static final int nextFollowingBlockInterval = 15;
+	private static final int nextColorThreshold = 36;
+	private static final int attacksX = 274;
+	private static final int attacksY = 399;
+	@Autowired
+	private ScreenStreamService screenStreamService;
 
-    private static final double blockLength = 19.333;
-
-    private static final int nextBlockIX = 498;
-    private static final int nextBlockIY = 53;
-
-    private static final int nextBlockTX = 498;
-    private static final int nextBlockTY = 63;
-
-    private static final int nextBlockOX = 509;
-    private static final int nextBlockOY = 52;
-
-    private static final int nextBlockJX = 519;
-    private static final int nextBlockJY = 64;
-
-    private static final int nextBlockSX = 509;
-    private static final int nextBlockSY = 63;
-
-    private static final int nextBlockZX = 509;
-    private static final int nextBlockZY = 63;
-
-    private static final int nextBlockLX = 498;
-    private static final int nextBlockLY = 63;
-
-    private static final int nextFollowingBlockStartX = 507;
-    private static final int nextFollowingBlockStartY = 89;
-
-    private static final int nextBlockLength = 11;
-    private static final int nextFollowingBlockLength = 9;
-    private static final int nextFollowingBlockInterval = 15;
-
-    private static final int nextColorThreshold = 36;
-
-    private static final int attacksX = 274;
-    private static final int attacksY = 399;
-
-
-    public static void main(String[] args) {
+	public static void main(String[] args) {
 //        Block block = new BlockZ();
 //        int[][] a = block.getStandardSpaceMatrix();
-        BufferedImage image = null;
+		BufferedImage image = null;
 
-        try {
-            image = ImageIO.read(new File("img/1551760995871.png"));
-            image = ScreenStreamService.imgToGray(image);
-            ImageIO.write(image, "png", new File("demo.png"));
-            TetrisBoardService tetrisBoardService = new TetrisBoardService();
-            TetrisBoard tetrisBoard = tetrisBoardService.analyzeBoardByImg(new Date(), image);
-            tetrisBoard.setHoldingBlock(tetrisBoard.getNextBlocks()[0]);
-            tetrisBoardService.getNextLocation(tetrisBoard);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+		try {
+			image = ImageIO.read(new File("img/1551760979071.png"));
+			image = ScreenStreamService.imgToGray(image);
+			ImageIO.write(image, "png", new File("demo.png"));
+			TetrisBoardService tetrisBoardService = new TetrisBoardService();
+			TetrisBoard tetrisBoard = tetrisBoardService.analyzeBoardByImg(new Date(), image);
+			tetrisBoard.setFallingBlock(tetrisBoard.getNextBlocks()[0]);
+			TetrisBoardService.getNextLocation(tetrisBoard);
+//			int[][] result = sumBoardAndBlockMatrix(tetrisBoard.getBoardMatrix(),tetrisBoard.getFallingBlock()
+//			.getRotationalSpaceMatrix()[2],3);
 
-    }
 
-    private static int[][] removeFallingBlock(int[][] boardMatrix) {
-        int[][] copy = new int[20][10];
-        int endY = 0;
-        int lines = 2;
-        int counter = 1;
-        boolean flag = false;
-        for (int y = 0; y < 20; y++) {
-            flag = false;
-            for (int x = 0; x < 10; x++) {
-                if (boardMatrix[y][x] == 1) {
-                    flag = true;
-                }
-            }
-            if (!flag && counter++ < lines) {
-                endY = y;
-            }
-        }
-        for (int y = 0; y < endY; y++) {
-            for (int x = 0; x < 10; x++) {
-                copy[y][x] = boardMatrix[y][x];
-            }
-        }
-        return copy;
-    }
+			PossibleMove move = train(tetrisBoard, 1, 1);
+			System.out.println();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-    private static int[][] sumBoardAndBlockMatrix(int[][] boardMatrix, int[][] blockMatrix,
-                                                  int xOfBoard) {
-        if (xOfBoard == 3)
-            System.out.println();
-        if (xOfBoard == 6)
-            System.out.println();
-        if (blockMatrix[0].length + xOfBoard > 10)
-            return null;
-        int[][] result = null;
-        int initY = 0;
-        for (int y = 0; y < 20; y++) {
-            if (boardMatrix[y][xOfBoard] == 1) {
-                initY = y;
-            }
-        }
-        a:
-        for (int y = initY + 1; y < 20; y++) {
+	}
 
-            int[][] trial = new int[20][10];
-            for (int i = 0; i < boardMatrix.length; i++)
-                for (int j = 0; j < boardMatrix[0].length; j++)
-                    trial[i][j] = boardMatrix[i][j];
+	private static PossibleMove train(TetrisBoard tetrisBoard, int expectedDeltaX, int expectedRotation) {
 
-            // 从block matrix左下角遍历
-            for (int blockY = blockMatrix.length - 1; blockY >= 0; blockY--) {
-                for (int blockX = 0; blockX < blockMatrix[0].length; blockX++) {
-                    int boardMatrixAtThisPoint = 0;
-                    try {
-                        if (y + (blockMatrix.length - blockY - 1) < 20)
-                            boardMatrixAtThisPoint =
-                                    boardMatrix[y + (blockMatrix.length - blockY - 1)][xOfBoard + blockX];
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+		List<double[]> possibleValues = new ArrayList<>();
+		HashMap<PossibleMove, double[]> bestMoves = new HashMap<>();
 
-                    if (boardMatrixAtThisPoint == 1 && blockMatrix[blockY][blockX] == 1) {
-                        continue a;
-                    }
-                    // 查找上方有没有阻挡
+		for (double leavingHoldScore = -1.5; leavingHoldScore > -2.5; leavingHoldScore -= 0.1) {
+			for (double havingNoBlockAbove = -1; havingNoBlockAbove > -2; havingNoBlockAbove -= 0.1) {
+				//System.out.println(leavingHoldScore+" "+havingNoBlockAbove);
+				for (double completeLineScore = 18; completeLineScore < 20; completeLineScore += 0.1) {
+					for (double heightDeductScore = -9; heightDeductScore > -11; heightDeductScore -= 0.1) {
+						for (double depthWeight = 3; depthWeight < 5; depthWeight += 0.1) {
+							for (double fillSpaceScore = 4; fillSpaceScore < 5; fillSpaceScore += 0.1) {
+								TetrisBoard.leavingHoldScore = leavingHoldScore;
+								TetrisBoard.havingNoBlockAbove = havingNoBlockAbove;
+								TetrisBoard.fillSpaceScore = fillSpaceScore;
+								TetrisBoard.heightDeductScore = heightDeductScore;
+								TetrisBoard.depthWeight = depthWeight;
+								TetrisBoard.completeLineScore = completeLineScore;
+								PossibleMove move = TetrisBoardService.getNextLocation(tetrisBoard);
+								if (move.getRotation() == expectedRotation && move.getMove().getDeltaX() == expectedDeltaX) {
+									double[] data = new double[]{leavingHoldScore, havingNoBlockAbove,
+											completeLineScore,
+											heightDeductScore,
+											depthWeight, fillSpaceScore};
+									bestMoves.put(move, data);
+									possibleValues.add(data);
+									System.out.println(leavingHoldScore + "\t" + havingNoBlockAbove + "\t" + completeLineScore + "\t" + heightDeductScore + "\t" +
+											depthWeight + "\t" + fillSpaceScore);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		ArrayList<PossibleMove> moves = new ArrayList<>();
+		for (PossibleMove move : bestMoves.keySet()) {
+			moves.add(move);
+		}
+		PossibleMove result = PossibleMove.findHighestScoreMove(moves);
+		double[] bestData = bestMoves.get(result);
+
+		return result;
+	}
+
+	private static int[][] removeFallingBlock(int[][] boardMatrix) {
+		int[][] copy = new int[20][10];
+		int endY = 0;
+		int lines = 2;
+		int counter = 1;
+		boolean flag = false;
+		for (int y = 0; y < 20; y++) {
+			flag = false;
+			for (int x = 0; x < 10; x++) {
+				if (boardMatrix[y][x] == 1) {
+					flag = true;
+				}
+			}
+			if (!flag && counter++ < lines) {
+				endY = y;
+			}
+		}
+		for (int y = 0; y < endY; y++) {
+			for (int x = 0; x < 10; x++) {
+				copy[y][x] = boardMatrix[y][x];
+			}
+		}
+		return copy;
+	}
+
+	private static int[][] sumBoardAndBlockMatrix(int[][] boardMatrix, int[][] blockMatrix,
+												  int xOfBoard) {
+		if (blockMatrix[0].length + xOfBoard > 10)
+			return null;
+		int[][] result = null;
+		int initY = 0;
+		for (int y = 0; y < 20; y++) {
+			if (boardMatrix[y][xOfBoard] == 1) {
+				initY = y;
+			}
+		}
+		a:
+		for (int y = initY + 1; y < 20; y++) {
+
+			int[][] trial = new int[20][10];
+			for (int i = 0; i < boardMatrix.length; i++)
+				for (int j = 0; j < boardMatrix[0].length; j++)
+					trial[i][j] = boardMatrix[i][j];
+
+			// 从block matrix左下角遍历
+			for (int blockY = blockMatrix.length - 1; blockY >= 0; blockY--) {
+				for (int blockX = 0; blockX < blockMatrix[0].length; blockX++) {
+					int boardMatrixAtThisPoint = 0;
+					try {
+						if (y + (blockMatrix.length - blockY - 1) < 20)
+							boardMatrixAtThisPoint =
+									boardMatrix[y + (blockMatrix.length - blockY - 1) - 1][xOfBoard + blockX];
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					if (boardMatrixAtThisPoint == 1 && blockMatrix[blockY][blockX] == 1) {
+						continue a;
+					}
+					// 查找上方有没有阻挡
 //                    for (int y2 = y + 1; y2 < 20; y2++) {
 //                        if (boardMatrix[y2][xOfBoard + blockX] == 1)
 //                            break a;
 //                    }
-                    if (!(boardMatrixAtThisPoint == 1 && blockMatrix[blockY][blockX] == 0))
-                        trial[y + (blockMatrix.length - blockY - 1)][xOfBoard + blockX] =
-                                blockMatrix[blockY][blockX];
-                }
-            }
-            result = trial.clone();
-            break;
-        }
+					if (!(boardMatrixAtThisPoint == 1 && blockMatrix[blockY][blockX] == 0))
+						trial[y + (blockMatrix.length - blockY - 1) - 1][xOfBoard + blockX] =
+								blockMatrix[blockY][blockX];
+				}
+			}
+			result = trial.clone();
+			break;
+		}
 
-        return result;
-    }
+		return result;
+	}
 
-    private static int analyzeAttacks(BufferedImage image) {
-        for (int i = 0; i <= 16; i++) {
-            if ((getBlue(image, attacksX, (int) (attacksY - i * blockLength)) < 50)) {
-                return i;
-            }
-        }
-        return 16;
-    }
+	private static int analyzeAttacks(BufferedImage image) {
+		for (int i = 0; i <= 16; i++) {
+			if ((getBlue(image, attacksX, (int) (attacksY - i * blockLength)) < 50)) {
+				return i;
+			}
+		}
+		return 16;
+	}
 
-    private static Block[] nextBlocks(BufferedImage image) {
-        Block[] result = new Block[6];
+	private static Block[] nextBlocks(BufferedImage image) {
+		Block[] result = new Block[6];
 
-        // next
-        for (int z = 0; z == 0; z++) {
-            // Block I
-            boolean iFlag = true;
-            for (int i = 0; i < 4; i++) {
-                if (!(getBlue(image, nextBlockIX + i * nextBlockLength, nextBlockIY) > nextColorThreshold)) {
-                    iFlag = false;
-                }
-            }
-            if (iFlag) {
-                result[0] = new BlockI();
-                break;
-            }
-            // Block T
-            boolean tFlag = true;
-            for (int i = 0; i < 3; i++) {
-                if (!(getBlue(image, nextBlockTX + i * nextBlockLength, nextBlockTY) > nextColorThreshold)) {
-                    tFlag = false;
-                }
-            }
-            if (!(getBlue(image, nextBlockTX + 1 * nextBlockLength,
-                    nextBlockTY - 1 * nextBlockLength) > nextColorThreshold)) {
-                tFlag = false;
-            }
-            if (tFlag) {
-                result[0] = new BlockT();
-                break;
-            }
-            // Block O
-            boolean oFlag = true;
-            for (int j = 0; j < 2; j++)
-                for (int i = 0; i < 2; i++) {
-                    if (!(getBlue(image, nextBlockOX + i * nextBlockLength,
-                            nextBlockOY + j * nextBlockLength) > nextColorThreshold)) {
-                        oFlag = false;
-                    }
-                }
-            if (oFlag) {
-                result[0] = new BlockO();
-                break;
-            }
-            // Block J
-            boolean jFlag = true;
-            for (int i = 0; i < 3; i++) {
-                if (!(getBlue(image, nextBlockJX - i * nextBlockLength, nextBlockJY) > nextColorThreshold)) {
-                    jFlag = false;
-                }
-            }
-            if (!(getBlue(image, nextBlockJX,
-                    nextBlockJY - 1 * nextBlockLength) > nextColorThreshold)) {
-                jFlag = false;
-            }
-            if (jFlag) {
-                result[0] = new BlockJ();
-                break;
-            }
-            // Block S
-            boolean sFlag = true;
-            if (!(getBlue(image, nextBlockSX - 1 * nextBlockLength, nextBlockSY) > nextColorThreshold)) {
-                sFlag = false;
-            }
-            if (!(getBlue(image, nextBlockSX, nextBlockSY - 1 * nextBlockLength) > nextColorThreshold)) {
-                sFlag = false;
-            }
-            if (!(getBlue(image, nextBlockSX + 1 * nextBlockLength,
-                    nextBlockSY - 1 * nextBlockLength) > nextColorThreshold)) {
-                sFlag = false;
-            }
-            if (sFlag) {
-                result[0] = new BlockS();
-                break;
-            }
-            //Block Z
-            boolean zFlag = true;
-            if (!(getBlue(image, nextBlockZX + 1 * nextBlockLength, nextBlockZY) > nextColorThreshold)) {
-                zFlag = false;
-            }
-            if (!(getBlue(image, nextBlockZX, nextBlockZY - 1 * nextBlockLength) > nextColorThreshold)) {
-                zFlag = false;
-            }
-            if (!(getBlue(image, nextBlockZX - 1 * nextBlockLength,
-                    nextBlockZY - 1 * nextBlockLength) > nextColorThreshold)) {
-                zFlag = false;
-            }
-            if (zFlag) {
-                result[0] = new BlockZ();
-                break;
-            }
-            //Block L
-            boolean lFlag = true;
-            for (int i = 0; i < 3; i++)
-                if (!(getBlue(image, nextBlockLX + i * nextBlockLength, nextBlockLY) > nextColorThreshold)) {
-                    lFlag = false;
-                }
-            if (!(getBlue(image, nextBlockLX,
-                    nextBlockLY - 1 * nextBlockLength) > nextColorThreshold)) {
-                lFlag = false;
-            }
-            if (lFlag) {
-                result[0] = new BlockL();
-                break;
-            }
-        }
-
-
-        int xIndex = nextFollowingBlockStartX;
-        int yIndex = nextFollowingBlockStartY;
-        // next following blocks
-        for (int z = 1; z <= 5; z++) {
-            Block resultBlock = null;
-            // block T
-            boolean tFlag = true;
-            if (!(getBlue(image, xIndex, yIndex) > nextColorThreshold)) {
-                tFlag = false;
-            }
-            for (int i = 0; i < 3; i++) {
-                if (!(getBlue(image,
-                        (xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
-                        yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
-                    tFlag = false;
-                }
-            }
-            if (tFlag) {
-                resultBlock = new BlockT();
-            }
-            // block O
-            boolean oFlag = true;
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 2; j++) {
-                    if (!(getBlue(image,
-                            xIndex + i * nextFollowingBlockLength,
-                            yIndex + j * nextFollowingBlockLength) > nextColorThreshold)) {
-                        oFlag = false;
-                    }
-                }
-            }
-            if (oFlag) {
-                resultBlock = new BlockO();
-            }
-
-            // block J
-            boolean jFlag = true;
-            if (!(getBlue(image, xIndex + nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
-                jFlag = false;
-            }
-            for (int i = 0; i < 3; i++) {
-                if (!(getBlue(image,
-                        (xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
-                        yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
-                    jFlag = false;
-                }
-            }
-            if (jFlag) {
-                resultBlock = new BlockJ();
-            }
-            // block S
-            boolean sFlag = true;
-            if (!(getBlue(image, xIndex, yIndex) > nextColorThreshold)) {
-                sFlag = false;
-            }
-            if (!(getBlue(image, xIndex + nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
-                sFlag = false;
-            }
-            for (int i = 0; i < 2; i++) {
-                if (!(getBlue(image,
-                        (xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
-                        yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
-                    sFlag = false;
-                }
-            }
-            if (sFlag) {
-                resultBlock = new BlockS();
-            }
-            // block I
-            boolean iFlag = true;
-            for (int i = 0; i < 4; i++) {
-                if (!(getBlue(image,
-                        (xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
-                        yIndex) > nextColorThreshold)) {
-                    iFlag = false;
-                }
-            }
-            if (iFlag) {
-                resultBlock = new BlockI();
-            }
-            // block L
-            boolean lFlag = true;
-            if (!(getBlue(image, xIndex - nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
-                lFlag = false;
-            }
-            for (int i = 0; i < 3; i++) {
-                if (!(getBlue(image,
-                        (xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
-                        yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
-                    lFlag = false;
-                }
-            }
-            if (lFlag) {
-                resultBlock = new BlockL();
-            }
-            // block Z
-            boolean zFlag = true;
-            if (!(getBlue(image, xIndex, yIndex) > nextColorThreshold)) {
-                zFlag = false;
-            }
-            if (!(getBlue(image, xIndex - nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
-                zFlag = false;
-            }
-            for (int i = 0; i < 2; i++) {
-                if (!(getBlue(image,
-                        (xIndex) + i * nextFollowingBlockLength,
-                        yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
-                    zFlag = false;
-                }
-            }
-            if (zFlag) {
-                resultBlock = new BlockZ();
-            }
+		// next
+		for (int z = 0; z == 0; z++) {
+			// Block I
+			boolean iFlag = true;
+			for (int i = 0; i < 4; i++) {
+				if (!(getBlue(image, nextBlockIX + i * nextBlockLength, nextBlockIY) > nextColorThreshold)) {
+					iFlag = false;
+				}
+			}
+			if (iFlag) {
+				result[0] = new BlockI();
+				break;
+			}
+			// Block T
+			boolean tFlag = true;
+			for (int i = 0; i < 3; i++) {
+				if (!(getBlue(image, nextBlockTX + i * nextBlockLength, nextBlockTY) > nextColorThreshold)) {
+					tFlag = false;
+				}
+			}
+			if (!(getBlue(image, nextBlockTX + 1 * nextBlockLength,
+					nextBlockTY - 1 * nextBlockLength) > nextColorThreshold)) {
+				tFlag = false;
+			}
+			if (tFlag) {
+				result[0] = new BlockT();
+				break;
+			}
+			// Block O
+			boolean oFlag = true;
+			for (int j = 0; j < 2; j++)
+				for (int i = 0; i < 2; i++) {
+					if (!(getBlue(image, nextBlockOX + i * nextBlockLength,
+							nextBlockOY + j * nextBlockLength) > nextColorThreshold)) {
+						oFlag = false;
+					}
+				}
+			if (oFlag) {
+				result[0] = new BlockO();
+				break;
+			}
+			// Block J
+			boolean jFlag = true;
+			for (int i = 0; i < 3; i++) {
+				if (!(getBlue(image, nextBlockJX - i * nextBlockLength, nextBlockJY) > nextColorThreshold)) {
+					jFlag = false;
+				}
+			}
+			if (!(getBlue(image, nextBlockJX,
+					nextBlockJY - 1 * nextBlockLength) > nextColorThreshold)) {
+				jFlag = false;
+			}
+			if (jFlag) {
+				result[0] = new BlockJ();
+				break;
+			}
+			// Block S
+			boolean sFlag = true;
+			if (!(getBlue(image, nextBlockSX - 1 * nextBlockLength, nextBlockSY) > nextColorThreshold)) {
+				sFlag = false;
+			}
+			if (!(getBlue(image, nextBlockSX, nextBlockSY - 1 * nextBlockLength) > nextColorThreshold)) {
+				sFlag = false;
+			}
+			if (!(getBlue(image, nextBlockSX + 1 * nextBlockLength,
+					nextBlockSY - 1 * nextBlockLength) > nextColorThreshold)) {
+				sFlag = false;
+			}
+			if (sFlag) {
+				result[0] = new BlockS();
+				break;
+			}
+			//Block Z
+			boolean zFlag = true;
+			if (!(getBlue(image, nextBlockZX + 1 * nextBlockLength, nextBlockZY) > nextColorThreshold)) {
+				zFlag = false;
+			}
+			if (!(getBlue(image, nextBlockZX, nextBlockZY - 1 * nextBlockLength) > nextColorThreshold)) {
+				zFlag = false;
+			}
+			if (!(getBlue(image, nextBlockZX - 1 * nextBlockLength,
+					nextBlockZY - 1 * nextBlockLength) > nextColorThreshold)) {
+				zFlag = false;
+			}
+			if (zFlag) {
+				result[0] = new BlockZ();
+				break;
+			}
+			//Block L
+			boolean lFlag = true;
+			for (int i = 0; i < 3; i++)
+				if (!(getBlue(image, nextBlockLX + i * nextBlockLength, nextBlockLY) > nextColorThreshold)) {
+					lFlag = false;
+				}
+			if (!(getBlue(image, nextBlockLX,
+					nextBlockLY - 1 * nextBlockLength) > nextColorThreshold)) {
+				lFlag = false;
+			}
+			if (lFlag) {
+				result[0] = new BlockL();
+				break;
+			}
+		}
 
 
-            result[z] = resultBlock;
-            yIndex += nextFollowingBlockInterval + 2 * nextFollowingBlockLength;
-        }
-        return result;
-    }
+		int xIndex = nextFollowingBlockStartX;
+		int yIndex = nextFollowingBlockStartY;
+		// next following blocks
+		for (int z = 1; z <= 5; z++) {
+			Block resultBlock = null;
+			// block T
+			boolean tFlag = true;
+			if (!(getBlue(image, xIndex, yIndex) > nextColorThreshold)) {
+				tFlag = false;
+			}
+			for (int i = 0; i < 3; i++) {
+				if (!(getBlue(image,
+						(xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
+						yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
+					tFlag = false;
+				}
+			}
+			if (tFlag) {
+				resultBlock = new BlockT();
+			}
+			// block O
+			boolean oFlag = true;
+			for (int i = 0; i < 2; i++) {
+				for (int j = 0; j < 2; j++) {
+					if (!(getBlue(image,
+							xIndex + i * nextFollowingBlockLength,
+							yIndex + j * nextFollowingBlockLength) > nextColorThreshold)) {
+						oFlag = false;
+					}
+				}
+			}
+			if (oFlag) {
+				resultBlock = new BlockO();
+			}
 
-    private static boolean isBlock(BufferedImage image, int x, int y) {
+			// block J
+			boolean jFlag = true;
+			if (!(getBlue(image, xIndex + nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
+				jFlag = false;
+			}
+			for (int i = 0; i < 3; i++) {
+				if (!(getBlue(image,
+						(xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
+						yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
+					jFlag = false;
+				}
+			}
+			if (jFlag) {
+				resultBlock = new BlockJ();
+			}
+			// block S
+			boolean sFlag = true;
+			if (!(getBlue(image, xIndex, yIndex) > nextColorThreshold)) {
+				sFlag = false;
+			}
+			if (!(getBlue(image, xIndex + nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
+				sFlag = false;
+			}
+			for (int i = 0; i < 2; i++) {
+				if (!(getBlue(image,
+						(xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
+						yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
+					sFlag = false;
+				}
+			}
+			if (sFlag) {
+				resultBlock = new BlockS();
+			}
+			// block I
+			boolean iFlag = true;
+			for (int i = 0; i < 4; i++) {
+				if (!(getBlue(image,
+						(xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
+						yIndex) > nextColorThreshold)) {
+					iFlag = false;
+				}
+			}
+			if (iFlag) {
+				resultBlock = new BlockI();
+			}
+			// block L
+			boolean lFlag = true;
+			if (!(getBlue(image, xIndex - nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
+				lFlag = false;
+			}
+			for (int i = 0; i < 3; i++) {
+				if (!(getBlue(image,
+						(xIndex - nextFollowingBlockLength) + i * nextFollowingBlockLength,
+						yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
+					lFlag = false;
+				}
+			}
+			if (lFlag) {
+				resultBlock = new BlockL();
+			}
+			// block Z
+			boolean zFlag = true;
+			if (!(getBlue(image, xIndex, yIndex) > nextColorThreshold)) {
+				zFlag = false;
+			}
+			if (!(getBlue(image, xIndex - nextFollowingBlockLength, yIndex) > nextColorThreshold)) {
+				zFlag = false;
+			}
+			for (int i = 0; i < 2; i++) {
+				if (!(getBlue(image,
+						(xIndex) + i * nextFollowingBlockLength,
+						yIndex + nextFollowingBlockLength) > nextColorThreshold)) {
+					zFlag = false;
+				}
+			}
+			if (zFlag) {
+				resultBlock = new BlockZ();
+			}
 
-        if ((image.getRGB(x, y) & 0xFF) < 32)
-            return false;
-        if ((image.getRGB(x - brightDx, y - brightDy) & 0xFF) <= 53)
-            return false;
-        return true;
-    }
 
-    private static int getBlue(BufferedImage image, int x, int y) {
-        return image.getRGB(x, y) & 0xFF;
-    }
+			result[z] = resultBlock;
+			yIndex += nextFollowingBlockInterval + 2 * nextFollowingBlockLength;
+		}
+		return result;
+	}
 
-    public PossibleMove getNextLocation(TetrisBoard tetrisBoard) {
-        Block block = tetrisBoard.getHoldingBlock();
-        int[][] blockMatrix = block.getStandardSpaceMatrix();
-        int[][][] rotationalSpaceMatrix = block.getRotationalSpaceMatrix();
-        int[][] boardMatrix = tetrisBoard.getBoardMatrix();
+	private static boolean isBlock(BufferedImage image, int x, int y) {
 
-        List<PossibleMove> possibleMoveList = new ArrayList<>();
-        // from left to right
-        for (int x = 0; x < 10; x++) {
-            int[][] result = sumBoardAndBlockMatrix(boardMatrix, blockMatrix, x);
-            if (result != null) {
-                PossibleMove move = new PossibleMove(new Move(x),
-                        TetrisBoard.computeScore(result), block, 0, result);
-                possibleMoveList.add(move);
-            }
-            // 几种不同的变化
-            for (int i = 0; i < rotationalSpaceMatrix.length; i++) {
-                if (x == 6) {
-                    System.out.println();
-                }
-                int[][] result2 = sumBoardAndBlockMatrix(boardMatrix,
-                        rotationalSpaceMatrix[i], x);
-                if (result2 != null) {
-                    PossibleMove move = new PossibleMove(new Move(x),
-                            TetrisBoard.computeScore(result2), block, i + 1, result2);
-                    possibleMoveList.add(move);
-                }
-            }
-        }
-        PossibleMove possibleMove = PossibleMove.findHighestScoreMove(possibleMoveList);
-        return possibleMove;
-    }
+		if ((image.getRGB(x, y) & 0xFF) < 32)
+			return false;
+		return (image.getRGB(x - brightDx, y - brightDy) & 0xFF) > 53;
+	}
 
-    public TetrisBoard analyzeBoardByImg(Date captureTime, BufferedImage image) {
-        TetrisBoard tetrisBoard = new TetrisBoard();
-        int[][] boardMatrix = new int[20][10]; // [y][x]
-        for (int y = 0; y < 20; y++) {
-            for (int x = 0; x < 10; x++) {
-                boardMatrix[y][x] =
-                        isBlock(image,
-                                (int) (startX + x * blockLength),
-                                (int) (startY - y * blockLength)) ? 1 : 0;
-            }
-        }
-        tetrisBoard.setBoardMatrix(removeFallingBlock(boardMatrix));
-        tetrisBoard.setNextBlocks(nextBlocks(image));
-        tetrisBoard.setAttackers(analyzeAttacks(image));
-        tetrisBoard.setCaptureTime(captureTime);
+	private static int getBlue(BufferedImage image, int x, int y) {
+		return image.getRGB(x, y) & 0xFF;
+	}
 
-        return tetrisBoard;
-    }
+	public static PossibleMove getNextLocation(TetrisBoard tetrisBoard) {
+		Block block = tetrisBoard.getFallingBlock();
+		int[][] blockMatrix = block.getStandardSpaceMatrix();
+		int[][][] rotationalSpaceMatrix = block.getRotationalSpaceMatrix();
+		int[][] boardMatrix = tetrisBoard.getBoardMatrix();
+
+		List<PossibleMove> possibleMoveList = new ArrayList<>();
+		// from left to right
+		for (int x = 0; x < 10; x++) {
+			int[][] result = sumBoardAndBlockMatrix(boardMatrix, blockMatrix, x);
+			if (result != null) {
+				PossibleMove move = new PossibleMove(new Move(x),
+						TetrisBoard.computeScore(result), block, 0, result);
+				possibleMoveList.add(move);
+			}
+			// 几种不同的变化
+			for (int i = 0; i < rotationalSpaceMatrix.length; i++) {
+
+				int[][] result2 = sumBoardAndBlockMatrix(boardMatrix,
+						rotationalSpaceMatrix[i], x);
+				if (result2 != null) {
+					PossibleMove move = new PossibleMove(new Move(x),
+							TetrisBoard.computeScore(result2), block, i + 1, result2);
+					possibleMoveList.add(move);
+				}
+			}
+		}
+		PossibleMove possibleMove = PossibleMove.findHighestScoreMove(possibleMoveList);
+		return possibleMove;
+	}
+
+	public TetrisBoard analyzeBoardByImg(Date captureTime, BufferedImage image) {
+		TetrisBoard tetrisBoard = new TetrisBoard();
+		int[][] boardMatrix = new int[20][10]; // [y][x]
+		for (int y = 0; y < 20; y++) {
+			for (int x = 0; x < 10; x++) {
+				boardMatrix[y][x] =
+						isBlock(image,
+								(int) (startX + x * blockLength),
+								(int) (startY - y * blockLength)) ? 1 : 0;
+			}
+		}
+		tetrisBoard.setBoardMatrix(removeFallingBlock(boardMatrix));
+		tetrisBoard.setNextBlocks(nextBlocks(image));
+		tetrisBoard.setAttackers(analyzeAttacks(image));
+		tetrisBoard.setCaptureTime(captureTime);
+
+		return tetrisBoard;
+	}
 
 //  下面都是shit，想到了一个超"高端"的算法（大雾 ↑
 //  屎山：
@@ -584,9 +616,9 @@ public class TetrisBoardService {
 //        return results;
 //    }
 
-    /*
-     * 这下面的代码或将成为新的屎山
-     * */
+	/*
+	 * 这下面的代码或将成为新的屎山
+	 * */
 //    public static void main(String[] args) {
 //        boolean printData = true;
 //        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);

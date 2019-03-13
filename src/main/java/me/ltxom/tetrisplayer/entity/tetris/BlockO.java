@@ -1,6 +1,6 @@
 package me.ltxom.tetrisplayer.entity.tetris;
 
-public class BlockO implements Block {
+public class BlockO extends BlockImp {
 
     private int[][] standardSpaceMatrix = new int[][]{{1, 1}, {1, 1}};
     private int[][][] rotationalSpaceMatrix = new int[][][]{};

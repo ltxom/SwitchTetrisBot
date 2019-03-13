@@ -72,6 +72,10 @@ public class SerialCommunicationService {
 
 	public void writeString(String str){
 		try {
+			if (serialPort == null) {
+				System.err.println("Serial Error");
+				System.exit(400);
+			}
 			serialPort.writeString(str);
 		} catch (SerialPortException e) {
 			e.printStackTrace();

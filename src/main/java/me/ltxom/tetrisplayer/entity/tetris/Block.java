@@ -6,4 +6,6 @@ public interface Block {
 
     int[][][] getRotationalSpaceMatrix();
 
+	@Override
+	public boolean equals(Object block2);
 }

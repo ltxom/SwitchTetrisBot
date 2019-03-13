@@ -1,20 +1,21 @@
 package me.ltxom.tetrisplayer.entity.tetris;
 
-public class BlockJ implements Block {
+public class BlockJ extends BlockImp {
 
-    private int[][] standardSpaceMatrix = new int[][]{{1, 0, 0}, {1, 1, 1}};
-    private int[][][] rotationalSpaceMatrix = new int[][][]{{
-            {1, 1}, {0, 1}, {0, 1}},
-            {{1, 1, 1}, {0, 0, 1}},
-            {{0, 1}, {0, 1}, {1, 1}}};
 
-    @Override
-    public int[][] getStandardSpaceMatrix() {
-        return standardSpaceMatrix;
-    }
+	private int[][] standardSpaceMatrix = new int[][]{{0, 0, 1}, {1, 1, 1}};
+	private int[][][] rotationalSpaceMatrix = new int[][][]{
+			{{1, 0}, {1, 0}, {1, 1}},
+			{{1, 1, 1}, {1, 0, 0}}, {
+			{1, 1}, {0, 1}, {0, 1}},};
 
-    @Override
-    public int[][][] getRotationalSpaceMatrix() {
-        return rotationalSpaceMatrix;
-    }
+	@Override
+	public int[][] getStandardSpaceMatrix() {
+		return standardSpaceMatrix;
+	}
+
+	@Override
+	public int[][][] getRotationalSpaceMatrix() {
+		return rotationalSpaceMatrix;
+	}
 }
